@@ -54,7 +54,10 @@ public class ConsultaService {
     public Consulta updateStatus(long id, String status) {
         List<String> validos = List.of("PENDENTE", "CANCELADA", "REALIZADA", "REMARCADA");
         if (!validos.contains(status.toUpperCase())) {
-            throw new IllegalArgumentException("Status inválido: " + status);
+            throw new IllegalArgumentException(
+                    "Status informado é inválido: '" + status + "'. Valores permitidos: PENDENTE, CANCELADA, REALIZADA, REMARCADA."
+            );
+
         }
 
         Consulta consulta = getConsultaById(id);
@@ -119,7 +122,9 @@ public class ConsultaService {
                         resultado.add(consulta);
                     }
                 } catch (Exception e) {
-                    throw new IllegalArgumentException("Data inválida na consulta ID " + consulta.getId());
+                    throw new IllegalArgumentException("Formato de data inválido na consulta ID "
+                            + consulta.getId() + ". Use o formato 'yyyy-MM-dd'.");
+
                 }
             }
         }
