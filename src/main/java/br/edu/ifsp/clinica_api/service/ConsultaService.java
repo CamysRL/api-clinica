@@ -90,8 +90,8 @@ public class ConsultaService {
     public List<Consulta> getAllConsultasPorClinica(long idClinica) {
         List<Consulta> resultado = new ArrayList<>();
         for (Consulta consulta : consultas) {
-            if (consulta.getClinica() != null &&
-                    idClinica == consulta.getClinica().getId_clinica()) {
+            if (consulta.getUnidade() != null &&
+                    idClinica == consulta.getUnidade().getId_clinica()) {
                 resultado.add(consulta);
             }
         }
@@ -159,8 +159,8 @@ public class ConsultaService {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
         for (Consulta consulta : consultas) {
-            if (consulta.getClinica() != null &&
-                    idClinica == consulta.getClinica().getId_clinica() &&
+            if (consulta.getUnidade() != null &&
+                    idClinica == consulta.getUnidade().getId_clinica() &&
                     consulta.getData_consulta() != null) {
                 try {
                     LocalDate dataConsulta = LocalDate.parse(consulta.getData_consulta(), formatter);

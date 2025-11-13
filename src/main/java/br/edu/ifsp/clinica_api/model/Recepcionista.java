@@ -9,9 +9,9 @@ import lombok.Data;
 import java.time.LocalDate;
 
 @Entity
-@Table(name = "paciente")
+@Table(name = "recepcionista")
 @Data
-public class Paciente {
+public class Recepcionista {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
@@ -31,9 +31,16 @@ public class Paciente {
     @Column(name = "data_nascimento", nullable = false)
     private LocalDate dataNascimento;
 
+    @Column(name = "data_contratacao", nullable = false)
+    private LocalDate dataContratacao;
+
     @ManyToOne
     @JoinColumn(name = "id_endereco", nullable = false)
     private Endereco endereco;
+
+    @ManyToOne
+    @JoinColumn(name = "id_unidade", nullable = false)
+    private Unidade unidade;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

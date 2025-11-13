@@ -73,4 +73,58 @@ public class ConsultaController {
         List<Consulta> consultas = consultaService.getAllConsultasPorPeriodo(dataInicio, dataFim);
         return ResponseEntity.ok(consultas);
     }
+
+    @GetMapping("/clinica/{id_clinica}")
+    public ResponseEntity<List<Consulta>> getAllConsultasPorClinica(@PathVariable long id_clinica) {
+
+        List<Consulta> consultas = consultaService.getAllConsultasPorClinica(id_clinica);
+        return ResponseEntity.ok(consultas);
+    }
+
+    @GetMapping("/clinica/{id_clinica}/periodo")
+    public ResponseEntity<List<Consulta>> getAllConsultasPorClinicaEPeriodo(@PathVariable long id_clinica,
+                                                                            @RequestParam String inicio, @RequestParam String fim) {
+
+        LocalDate dataInicio = LocalDate.parse(inicio);
+        LocalDate dataFim = LocalDate.parse(fim);
+
+        List<Consulta> consultas = consultaService.getAllConsultasPorClinicaEPeriodo(id_clinica, dataInicio, dataFim);
+        return ResponseEntity.ok(consultas);
+    }
+
+    @GetMapping("/medico/{id_medico}")
+    public ResponseEntity<List<Consulta>> getAllConsultasPorMedico(@PathVariable long id_medico) {
+
+        List<Consulta> consultas = consultaService.getAllConsultasPorMedico(id_medico);
+        return ResponseEntity.ok(consultas);
+    }
+
+    @GetMapping("/medico/{id_medico}/periodo")
+    public ResponseEntity<List<Consulta>> getAllConsultasPorMedicoEPeriodo(@PathVariable long id_medico,
+                                                                           @RequestParam String inicio, @RequestParam String fim) {
+
+        LocalDate dataInicio = LocalDate.parse(inicio);
+        LocalDate dataFim = LocalDate.parse(fim);
+
+        List<Consulta> consultas = consultaService.getAllConsultasPorMedicoEPeriodo(id_medico, dataInicio, dataFim);
+        return ResponseEntity.ok(consultas);
+    }
+
+    @GetMapping("/paciente/{id_paciente}")
+    public ResponseEntity<List<Consulta>> getAllConsultasPorPaciente(@PathVariable long id_paciente) {
+
+        List<Consulta> consultas = consultaService.getAllConsultasPorPaciente(id_paciente);
+        return ResponseEntity.ok(consultas);
+    }
+
+    @GetMapping("/paciente/{id_paciente}/periodo")
+    public ResponseEntity<List<Consulta>> getAllConsultasPorPacienteEPeriodo(@PathVariable long id_paciente,
+                                                                             @RequestParam String inicio, @RequestParam String fim) {
+
+        LocalDate dataInicio = LocalDate.parse(inicio);
+        LocalDate dataFim = LocalDate.parse(fim);
+
+        List<Consulta> consultas = consultaService.getAllConsultasPorPacienteEPeriodo(id_paciente, dataInicio, dataFim);
+        return ResponseEntity.ok(consultas);
+    }
 }
