@@ -1,16 +1,32 @@
 package br.edu.ifsp.clinica_api.controller;
 
-
-import br.edu.ifsp.clinica_api.model.Consulta;
-import br.edu.ifsp.clinica_api.service.ConsultaService;
-import org.springframework.http.ResponseEntity;
+import br.edu.ifsp.clinica_api.model.Medico;
+import br.edu.ifsp.clinica_api.service.MedicoService;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
 import java.util.List;
 
 @RestController
-@RequestMapping("/consultas")
+@RequestMapping("/medicos")
 public class MedicoController {
+    private final MedicoService medicoService;
 
+    public MedicoController(MedicoService medicoService) {
+        this.medicoService = medicoService;
+    }
+
+    @GetMapping
+    public List<Medico> listar() {
+        return medicoService.listarTodos();
+    }
+
+    @PostMapping
+    public Medico criar(@RequestBody Medico medico) {
+        return medicoService.salvar(medico);
+    }
+
+    @DeleteMapping("/{id}")
+    public void excluir(@PathVariable Long id) {
+        medicoService.excluir(id);
+    }
 }
