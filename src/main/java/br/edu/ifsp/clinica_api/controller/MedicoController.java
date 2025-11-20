@@ -1,5 +1,6 @@
 package br.edu.ifsp.clinica_api.controller;
 
+import br.edu.ifsp.clinica_api.dto.MedicoDTO;
 import br.edu.ifsp.clinica_api.model.Medico;
 import br.edu.ifsp.clinica_api.service.MedicoService;
 import org.springframework.web.bind.annotation.*;
@@ -21,8 +22,8 @@ public class MedicoController {
     }
 
     @PostMapping
-    public Medico criar(@RequestBody Medico medico) {
-        return medicoService.salvar(medico);
+    public Medico criar(@RequestBody MedicoDTO medicoDTO) {
+        return medicoService.cadastrar(medicoDTO);
     }
 
     @DeleteMapping("/{id}")

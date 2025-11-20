@@ -2,6 +2,7 @@ package br.edu.ifsp.clinica_api.controller;
 
 import br.edu.ifsp.clinica_api.model.Consulta;
 import br.edu.ifsp.clinica_api.service.ConsultaService;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,6 +20,8 @@ public class ConsultaController {
         this.consultaService = consultaService;
     }
 
+    // ---------------------- CRUD ----------------------
+
     @PostMapping
     public ResponseEntity<Consulta> createConsulta(@RequestBody Consulta newConsulta) {
         return ResponseEntity.status(HttpStatus.CREATED).body(consultaService.createConsulta(newConsulta));
@@ -34,23 +37,25 @@ public class ConsultaController {
         return ResponseEntity.ok(consultaService.getConsultaById(id));
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<Consulta> updateConsulta(@PathVariable long id,
+                                                   @RequestBody Consulta updatedConsulta) {
+        return ResponseEntity.ok(consultaService.updateConsulta(id, updatedConsulta));
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteConsulta(@PathVariable long id) {
         consultaService.deleteConsulta(id);
         return ResponseEntity.noContent().build();
     }
 
-    @DeleteMapping()
+    @DeleteMapping
     public ResponseEntity<Void> deleteAllConsultas() {
         consultaService.deleteAllConsultas();
         return ResponseEntity.noContent().build();
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<Consulta> updateConsulta(@PathVariable long id,
-                                                   @RequestBody Consulta updatedConsulta) {
-        return ResponseEntity.ok(consultaService.updateConsulta(id, updatedConsulta));
-    }
+    // ---------------------- STATUS ----------------------
 
     @PatchMapping("/{id}/status")
     public ResponseEntity<Consulta> updateStatus(@PathVariable long id,
@@ -60,71 +65,64 @@ public class ConsultaController {
 
     @GetMapping("/status/{status}")
     public ResponseEntity<List<Consulta>> getAllConsultasPorStatus(@PathVariable String status) {
-
-        List<Consulta> consultas = consultaService.getAllConsultasPorStatus(status);
-        return ResponseEntity.ok(consultas);
+        return ResponseEntity.ok(consultaService.getAllConsultasPorStatus(status));
     }
+
+    // ---------------------- FILTROS POR DATA ----------------------
 
     @GetMapping("/periodo")
-    public ResponseEntity<List<Consulta>> getAllConsultasPorPeriodo(@RequestParam String inicio, @RequestParam String fim) {
-
-        LocalDate dataInicio = LocalDate.parse(inicio);
-        LocalDate dataFim = LocalDate.parse(fim);
-        List<Consulta> consultas = consultaService.getAllConsultasPorPeriodo(dataInicio, dataFim);
-        return ResponseEntity.ok(consultas);
+    public ResponseEntity<List<Consulta>> getAllConsultasPorPeriodo(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate inicio,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fim
+    ) {
+        return ResponseEntity.ok(consultaService.getAllConsultasPorPeriodo(inicio, fim));
     }
 
-    @GetMapping("/clinica/{id_clinica}")
-    public ResponseEntity<List<Consulta>> getAllConsultasPorClinica(@PathVariable long id_clinica) {
+    // ---------------------- POR UNIDADE ----------------------
 
-        List<Consulta> consultas = consultaService.getAllConsultasPorClinica(id_clinica);
-        return ResponseEntity.ok(consultas);
+    @GetMapping("/unidade/{idUnidade}")
+    public ResponseEntity<List<Consulta>> getAllConsultasPorUnidade(@PathVariable long idUnidade) {
+        return ResponseEntity.ok(consultaService.getAllConsultasPorUnidade(idUnidade));
     }
 
-    @GetMapping("/clinica/{id_clinica}/periodo")
-    public ResponseEntity<List<Consulta>> getAllConsultasPorClinicaEPeriodo(@PathVariable long id_clinica,
-                                                                            @RequestParam String inicio, @RequestParam String fim) {
-
-        LocalDate dataInicio = LocalDate.parse(inicio);
-        LocalDate dataFim = LocalDate.parse(fim);
-
-        List<Consulta> consultas = consultaService.getAllConsultasPorClinicaEPeriodo(id_clinica, dataInicio, dataFim);
-        return ResponseEntity.ok(consultas);
+    @GetMapping("/unidade/{idUnidade}/periodo")
+    public ResponseEntity<List<Consulta>> getAllConsultasPorUnidadeEPeriodo(
+            @PathVariable long idUnidade,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate inicio,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fim
+    ) {
+        return ResponseEntity.ok(consultaService.getAllConsultasPorUnidadeEPeriodo(idUnidade, inicio, fim));
     }
 
-    @GetMapping("/medico/{id_medico}")
-    public ResponseEntity<List<Consulta>> getAllConsultasPorMedico(@PathVariable long id_medico) {
+    // ---------------------- POR MÉDICO ----------------------
 
-        List<Consulta> consultas = consultaService.getAllConsultasPorMedico(id_medico);
-        return ResponseEntity.ok(consultas);
+    @GetMapping("/medico/{idMedico}")
+    public ResponseEntity<List<Consulta>> getAllConsultasPorMedico(@PathVariable long idMedico) {
+        return ResponseEntity.ok(consultaService.getAllConsultasPorMedico(idMedico));
     }
 
-    @GetMapping("/medico/{id_medico}/periodo")
-    public ResponseEntity<List<Consulta>> getAllConsultasPorMedicoEPeriodo(@PathVariable long id_medico,
-                                                                           @RequestParam String inicio, @RequestParam String fim) {
-
-        LocalDate dataInicio = LocalDate.parse(inicio);
-        LocalDate dataFim = LocalDate.parse(fim);
-
-        List<Consulta> consultas = consultaService.getAllConsultasPorMedicoEPeriodo(id_medico, dataInicio, dataFim);
-        return ResponseEntity.ok(consultas);
+    @GetMapping("/medico/{idMedico}/periodo")
+    public ResponseEntity<List<Consulta>> getAllConsultasPorMedicoEPeriodo(
+            @PathVariable long idMedico,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate inicio,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fim
+    ) {
+        return ResponseEntity.ok(consultaService.getAllConsultasPorMedicoEPeriodo(idMedico, inicio, fim));
     }
 
-    @GetMapping("/paciente/{id_paciente}")
-    public ResponseEntity<List<Consulta>> getAllConsultasPorPaciente(@PathVariable long id_paciente) {
+    // ---------------------- POR PACIENTE ----------------------
 
-        List<Consulta> consultas = consultaService.getAllConsultasPorPaciente(id_paciente);
-        return ResponseEntity.ok(consultas);
+    @GetMapping("/paciente/{idPaciente}")
+    public ResponseEntity<List<Consulta>> getAllConsultasPorPaciente(@PathVariable long idPaciente) {
+        return ResponseEntity.ok(consultaService.getAllConsultasPorPaciente(idPaciente));
     }
 
-    @GetMapping("/paciente/{id_paciente}/periodo")
-    public ResponseEntity<List<Consulta>> getAllConsultasPorPacienteEPeriodo(@PathVariable long id_paciente,
-                                                                             @RequestParam String inicio, @RequestParam String fim) {
-
-        LocalDate dataInicio = LocalDate.parse(inicio);
-        LocalDate dataFim = LocalDate.parse(fim);
-
-        List<Consulta> consultas = consultaService.getAllConsultasPorPacienteEPeriodo(id_paciente, dataInicio, dataFim);
-        return ResponseEntity.ok(consultas);
+    @GetMapping("/paciente/{idPaciente}/periodo")
+    public ResponseEntity<List<Consulta>> getAllConsultasPorPacienteEPeriodo(
+            @PathVariable long idPaciente,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate inicio,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fim
+    ) {
+        return ResponseEntity.ok(consultaService.getAllConsultasPorPacienteEPeriodo(idPaciente, inicio, fim));
     }
 }

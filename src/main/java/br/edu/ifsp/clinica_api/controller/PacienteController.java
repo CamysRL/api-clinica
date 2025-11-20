@@ -1,5 +1,6 @@
 package br.edu.ifsp.clinica_api.controller;
 
+import br.edu.ifsp.clinica_api.dto.PacienteDTO;
 import br.edu.ifsp.clinica_api.model.Paciente;
 
 import br.edu.ifsp.clinica_api.service.PacienteService;
@@ -22,8 +23,8 @@ public class PacienteController {
     }
 
     @PostMapping
-    public Paciente criar(@RequestBody Paciente paciente) {
-        return pacienteService.salvar(paciente);
+    public Paciente criar(@RequestBody PacienteDTO paciente) {
+        return pacienteService.cadastrar(paciente);
     }
 
     @DeleteMapping("/{id}")

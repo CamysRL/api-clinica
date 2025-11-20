@@ -29,6 +29,6 @@ public class Endereco {
     @Column(nullable = false)
     private String bairro;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String complemento;
 }

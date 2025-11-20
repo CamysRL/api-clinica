@@ -2,13 +2,14 @@ package br.edu.ifsp.clinica_api.service;
 
 import br.edu.ifsp.clinica_api.exceptions.ConsultaNotFoundException;
 import br.edu.ifsp.clinica_api.model.Consulta;
+import br.edu.ifsp.clinica_api.model.enums.StatusConsulta;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 
 @Service
 public class ConsultaService {
@@ -16,17 +17,20 @@ public class ConsultaService {
     private final List<Consulta> consultas = new ArrayList<>();
     private final AtomicLong idGenerator = new AtomicLong();
 
-
+    // Criar consulta
     public Consulta createConsulta(Consulta newConsulta) {
         newConsulta.setId(idGenerator.incrementAndGet());
+        newConsulta.setDataHoraRegistrada(LocalDateTime.now());
         consultas.add(newConsulta);
         return newConsulta;
     }
 
+    // Listar tudo
     public List<Consulta> getAllConsultas() {
         return consultas;
     }
 
+    // Buscar por ID
     public Consulta getConsultaById(long id) {
         return consultas.stream()
                 .filter(c -> c.getId() == id)
@@ -34,171 +38,121 @@ public class ConsultaService {
                 .orElseThrow(() -> new ConsultaNotFoundException(id));
     }
 
+    // Deletar uma
     public void deleteConsulta(long id) {
-        boolean removed = consultas.removeIf(c -> c.getId() == id);
+        boolean removed = consultas.removeIf(c -> c.getId().equals(id));
         if (!removed) throw new ConsultaNotFoundException(id);
     }
 
+    // Deletar tudo
     public void deleteAllConsultas() {
         consultas.clear();
     }
 
+    // Atualizar consulta inteira
     public Consulta updateConsulta(long id, Consulta updatedConsulta) {
-        Consulta consulta = getConsultaById(id);
+        Consulta original = getConsultaById(id);
+
         updatedConsulta.setId(id);
-        consultas.remove(consulta);
+        // Mantém a data de registro original
+        updatedConsulta.setDataHoraRegistrada(original.getDataHoraRegistrada());
+
+        consultas.remove(original);
         consultas.add(updatedConsulta);
         return updatedConsulta;
     }
 
+    // Atualizar APENAS status
     public Consulta updateStatus(long id, String status) {
-        List<String> validos = List.of("PENDENTE", "CANCELADA", "REALIZADA", "REMARCADA");
-        if (!validos.contains(status.toUpperCase())) {
-            throw new IllegalArgumentException(
-                    "Status informado é inválido: '" + status + "'. Valores permitidos: PENDENTE, CANCELADA, REALIZADA, REMARCADA."
-            );
 
+        StatusConsulta novoStatus;
+
+        try {
+            novoStatus = StatusConsulta.valueOf(status.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException(
+                    "Status inválido. Use: PENDENTE, CANCELADA, REALIZADA, REMARCADA."
+            );
         }
 
         Consulta consulta = getConsultaById(id);
-        consulta.setStatus_consulta(status.toUpperCase());
+        consulta.setStatus(novoStatus);
         return consulta;
     }
 
+    // Filtrar por médico
     public List<Consulta> getAllConsultasPorMedico(long idMedico) {
-        List<Consulta> resultado = new ArrayList<>();
-        for (Consulta consulta : consultas) {
-            if (consulta.getMedico() != null &&
-                    idMedico == consulta.getMedico().getId_medico()) {
-                resultado.add(consulta);
-            }
-        }
-        return resultado;
+        return consultas.stream()
+                .filter(c -> c.getMedico() != null && c.getMedico().getId() == idMedico)
+                .toList();
     }
 
+    // Filtrar por paciente
     public List<Consulta> getAllConsultasPorPaciente(long idPaciente) {
-        List<Consulta> resultado = new ArrayList<>();
-        for (Consulta consulta : consultas) {
-            if (consulta.getPaciente() != null &&
-                    idPaciente == consulta.getPaciente().getId_paciente()) {
-                resultado.add(consulta);
-            }
-        }
-        return resultado;
+        return consultas.stream()
+                .filter(c -> c.getPaciente() != null && c.getPaciente().getId() == idPaciente)
+                .toList();
     }
 
-    public List<Consulta> getAllConsultasPorClinica(long idClinica) {
-        List<Consulta> resultado = new ArrayList<>();
-        for (Consulta consulta : consultas) {
-            if (consulta.getUnidade() != null &&
-                    idClinica == consulta.getUnidade().getId_clinica()) {
-                resultado.add(consulta);
-            }
-        }
-        return resultado;
+    // Filtrar por clínica
+    public List<Consulta> getAllConsultasPorUnidade(long idClinica) {
+        return consultas.stream()
+                .filter(c -> c.getUnidade() != null && c.getUnidade().getId() == idClinica)
+                .toList();
     }
 
+    // Filtrar por status
     public List<Consulta> getAllConsultasPorStatus(String status) {
-        List<Consulta> resultado = new ArrayList<>();
-        for (Consulta consulta : consultas) {
-            if (status.equalsIgnoreCase(consulta.getStatus_consulta())) {
-                resultado.add(consulta);
-            }
+        try {
+            StatusConsulta statusEnum = StatusConsulta.valueOf(status.toUpperCase());
+            return consultas.stream()
+                    .filter(c -> c.getStatus() == statusEnum)
+                    .toList();
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Status inválido.");
         }
-        return resultado;
     }
 
+    // Filtrar por período (data início e fim)
     public List<Consulta> getAllConsultasPorPeriodo(LocalDate inicio, LocalDate fim) {
-        List<Consulta> resultado = new ArrayList<>();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-
-        for (Consulta consulta : consultas) {
-            if (consulta.getData_consulta() != null) {
-                try {
-                    LocalDate dataConsulta = LocalDate.parse(consulta.getData_consulta(), formatter);
-
-                    if ((dataConsulta.isEqual(inicio) || dataConsulta.isAfter(inicio)) &&
-                            (dataConsulta.isEqual(fim) || dataConsulta.isBefore(fim))) {
-                        resultado.add(consulta);
-                    }
-                } catch (Exception e) {
-                    throw new IllegalArgumentException("Formato de data inválido na consulta ID "
-                            + consulta.getId() + ". Use o formato 'yyyy-MM-dd'.");
-
-                }
-            }
-        }
-        return resultado;
+        return consultas.stream()
+                .filter(c -> c.getDataConsulta() != null &&
+                        !c.getDataConsulta().isBefore(inicio) &&
+                        !c.getDataConsulta().isAfter(fim))
+                .toList();
     }
 
+    // Médico + período
     public List<Consulta> getAllConsultasPorMedicoEPeriodo(long idMedico, LocalDate inicio, LocalDate fim) {
-        List<Consulta> resultado = new ArrayList<>();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-
-        for (Consulta consulta : consultas) {
-            if (consulta.getMedico() != null &&
-                    idMedico == consulta.getMedico().getId_medico() &&
-                    consulta.getData_consulta() != null) {
-                try {
-                    LocalDate dataConsulta = LocalDate.parse(consulta.getData_consulta(), formatter);
-
-                    if ((dataConsulta.isEqual(inicio) || dataConsulta.isAfter(inicio)) &&
-                            (dataConsulta.isEqual(fim) || dataConsulta.isBefore(fim))) {
-                        resultado.add(consulta);
-                    }
-                } catch (Exception e) {
-                    throw new IllegalArgumentException("Data inválida na consulta ID " + consulta.getId());
-                }
-            }
-        }
-        return resultado;
+        return consultas.stream()
+                .filter(c -> c.getMedico() != null &&
+                        c.getMedico().getId() == idMedico &&
+                        c.getDataConsulta() != null &&
+                        !c.getDataConsulta().isBefore(inicio) &&
+                        !c.getDataConsulta().isAfter(fim))
+                .toList();
     }
 
-    public List<Consulta> getAllConsultasPorClinicaEPeriodo(long idClinica, LocalDate inicio, LocalDate fim) {
-        List<Consulta> resultado = new ArrayList<>();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-
-        for (Consulta consulta : consultas) {
-            if (consulta.getUnidade() != null &&
-                    idClinica == consulta.getUnidade().getId_clinica() &&
-                    consulta.getData_consulta() != null) {
-                try {
-                    LocalDate dataConsulta = LocalDate.parse(consulta.getData_consulta(), formatter);
-
-                    if ((dataConsulta.isEqual(inicio) || dataConsulta.isAfter(inicio)) &&
-                            (dataConsulta.isEqual(fim) || dataConsulta.isBefore(fim))) {
-                        resultado.add(consulta);
-                    }
-                } catch (Exception e) {
-                    throw new IllegalArgumentException("Data inválida na consulta ID " + consulta.getId());
-                }
-            }
-        }
-        return resultado;
+    // Clínica + período
+    public List<Consulta> getAllConsultasPorUnidadeEPeriodo(long idClinica, LocalDate inicio, LocalDate fim) {
+        return consultas.stream()
+                .filter(c -> c.getUnidade() != null &&
+                        c.getUnidade().getId() == idClinica &&
+                        c.getDataConsulta() != null &&
+                        !c.getDataConsulta().isBefore(inicio) &&
+                        !c.getDataConsulta().isAfter(fim))
+                .toList();
     }
 
+    // Paciente + período
     public List<Consulta> getAllConsultasPorPacienteEPeriodo(long idPaciente, LocalDate inicio, LocalDate fim) {
-        List<Consulta> resultado = new ArrayList<>();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-
-        for (Consulta consulta : consultas) {
-            if (consulta.getPaciente() != null &&
-                    idPaciente == consulta.getPaciente().getId_paciente() &&
-                    consulta.getData_consulta() != null) {
-                try {
-                    LocalDate dataConsulta = LocalDate.parse(consulta.getData_consulta(), formatter);
-
-                    if ((dataConsulta.isEqual(inicio) || dataConsulta.isAfter(inicio)) &&
-                            (dataConsulta.isEqual(fim) || dataConsulta.isBefore(fim))) {
-                        resultado.add(consulta);
-                    }
-                } catch (Exception e) {
-                    throw new IllegalArgumentException("Data inválida na consulta ID " + consulta.getId());
-                }
-            }
-        }
-        return resultado;
+        return consultas.stream()
+                .filter(c -> c.getPaciente() != null &&
+                        c.getPaciente().getId() == idPaciente &&
+                        c.getDataConsulta() != null &&
+                        !c.getDataConsulta().isBefore(inicio) &&
+                        !c.getDataConsulta().isAfter(fim))
+                .toList();
     }
-
 }
 

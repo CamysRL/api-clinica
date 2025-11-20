@@ -6,6 +6,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@RestController
+@RequestMapping("/usuarios")
 public class UsuarioController {
     private final UsuarioService usuarioService;
 
@@ -20,7 +22,7 @@ public class UsuarioController {
 
     @PostMapping
     public Usuario criar(@RequestBody Usuario usuario) {
-        return usuarioService.salvar(usuario);
+        return usuarioService.cadastrar(usuario);
     }
 
     @DeleteMapping("/{id}")

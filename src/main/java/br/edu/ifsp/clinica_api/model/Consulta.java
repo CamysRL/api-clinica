@@ -36,4 +36,8 @@ public class Consulta {
     @ManyToOne
     @JoinColumn(name = "id_medico", nullable = false)
     private Medico medico;
+
+    @ManyToOne
+    @JoinColumn(name = "id_unidade", nullable = false)
+    private Unidade unidade;
 }

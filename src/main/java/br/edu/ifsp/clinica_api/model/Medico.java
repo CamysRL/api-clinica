@@ -33,6 +33,7 @@ public class Medico {
     @Column(nullable = false, unique = true)
     private String crm;
 
+    @Column(nullable = true, unique = true)
     private String rqe;
 
     @Column(name = "data_contratacao", nullable = false)
