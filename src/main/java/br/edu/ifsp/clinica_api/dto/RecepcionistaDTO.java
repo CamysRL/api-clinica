@@ -22,4 +22,6 @@ public class RecepcionistaDTO {
     private Long unidadeId;
 
     private EnderecoDTO endereco;
+
+    private String senha;
 }

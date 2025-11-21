@@ -20,11 +20,6 @@ public class UsuarioController {
         return usuarioService.listarTodos();
     }
 
-    @PostMapping
-    public Usuario criar(@RequestBody Usuario usuario) {
-        return usuarioService.cadastrar(usuario);
-    }
-
     @DeleteMapping("/{id}")
     public void excluir(@PathVariable Long id) {
         usuarioService.excluir(id);

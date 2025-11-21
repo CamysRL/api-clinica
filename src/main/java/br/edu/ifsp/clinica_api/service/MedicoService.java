@@ -2,6 +2,7 @@ package br.edu.ifsp.clinica_api.service;
 
 import br.edu.ifsp.clinica_api.dto.MedicoDTO;
 import br.edu.ifsp.clinica_api.model.Medico;
+import br.edu.ifsp.clinica_api.model.enums.Papel;
 import br.edu.ifsp.clinica_api.repository.EspecialidadeRepository;
 import br.edu.ifsp.clinica_api.repository.MedicoRepository;
 import br.edu.ifsp.clinica_api.repository.UnidadeRepository;
@@ -16,6 +17,7 @@ public class MedicoService {
     private final MedicoRepository medicoRepository;
     private final EnderecoService enderecoService;
     private final UnidadeRepository unidadeRepository;
+    private final UsuarioService usuarioService;
     private final EspecialidadeRepository especialidadeRepository;
 
     public List<Medico> listarTodos() {
@@ -49,10 +51,19 @@ public class MedicoService {
                         .orElseThrow(() -> new RuntimeException("Especialidade não encontrada"))
         );
 
-        // Endereço
         medico.setEndereco(enderecoService.getOrCreate(dto.getEndereco()));
 
-        return medicoRepository.save(medico);
+        medico = medicoRepository.save(medico);
+
+        usuarioService.criarUsuario(
+                dto.getEmail(),
+                dto.getSenha(),
+                medico.getId(),
+                Papel.MEDICO
+        );
+
+        return medico;
+
     }
 
     public void excluir(Long id) {

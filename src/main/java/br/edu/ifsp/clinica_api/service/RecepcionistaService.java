@@ -2,6 +2,7 @@ package br.edu.ifsp.clinica_api.service;
 
 import br.edu.ifsp.clinica_api.dto.RecepcionistaDTO;
 import br.edu.ifsp.clinica_api.model.Recepcionista;
+import br.edu.ifsp.clinica_api.model.enums.Papel;
 import br.edu.ifsp.clinica_api.repository.RecepcionistaRepository;
 import br.edu.ifsp.clinica_api.repository.UnidadeRepository;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +16,7 @@ public class RecepcionistaService {
     private final RecepcionistaRepository recepcionistaRepository;
     private final EnderecoService enderecoService;
     private final UnidadeRepository unidadeRepository;
+    private final UsuarioService usuarioService;
 
     public List<Recepcionista> listarTodos() {
         return recepcionistaRepository.findAll();
@@ -42,7 +44,16 @@ public class RecepcionistaService {
         // Endereço
         recepcionista.setEndereco(enderecoService.getOrCreate(dto.getEndereco()));
 
-        return recepcionistaRepository.save(recepcionista);
+        recepcionista = recepcionistaRepository.save(recepcionista);
+
+        usuarioService.criarUsuario(
+                dto.getEmail(),
+                dto.getSenha(),
+                recepcionista.getId(),
+                Papel.RECEPCIONISTA
+        );
+
+        return recepcionista;
     }
 
     public void excluir(Long id) {

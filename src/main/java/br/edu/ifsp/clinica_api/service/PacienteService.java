@@ -2,6 +2,7 @@ package br.edu.ifsp.clinica_api.service;
 
 import br.edu.ifsp.clinica_api.dto.PacienteDTO;
 import br.edu.ifsp.clinica_api.model.Paciente;
+import br.edu.ifsp.clinica_api.model.enums.Papel;
 import br.edu.ifsp.clinica_api.repository.PacienteRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -13,6 +14,7 @@ import java.util.List;
 public class PacienteService {
     private final PacienteRepository pacienteRepository;
     private final EnderecoService enderecoService;
+    private final UsuarioService usuarioService;
 
     public List<Paciente> listarTodos() {
         return pacienteRepository.findAll();
@@ -33,7 +35,17 @@ public class PacienteService {
         // Endereço
         paciente.setEndereco(enderecoService.getOrCreate(dto.getEndereco()));
 
-        return pacienteRepository.save(paciente);
+
+        paciente = pacienteRepository.save(paciente);
+
+        usuarioService.criarUsuario(
+                dto.getEmail(),
+                dto.getSenha(),
+                paciente.getId(),
+                Papel.PACIENTE
+        );
+
+        return paciente;
     }
 
     public void excluir(Long id) {

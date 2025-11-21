@@ -19,4 +19,6 @@ public class PacienteDTO {
     private EstadoCivil estadoCivil;
 
     private EnderecoDTO endereco;
+
+    private String senha;
 }

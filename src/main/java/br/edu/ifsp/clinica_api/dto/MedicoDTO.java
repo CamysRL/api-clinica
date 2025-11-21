@@ -26,5 +26,7 @@ public class MedicoDTO {
     private Long especialidadeId;
 
     private EnderecoDTO endereco;
+
+    private String senha;
 }
 

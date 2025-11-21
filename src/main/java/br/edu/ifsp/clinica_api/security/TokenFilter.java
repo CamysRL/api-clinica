@@ -1,4 +1,4 @@
-package br.edu.ifsp.clinica_api.config;
+package br.edu.ifsp.clinica_api.security;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

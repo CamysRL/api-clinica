@@ -3,6 +3,10 @@ package br.edu.ifsp.clinica_api.service;
 import br.edu.ifsp.clinica_api.exceptions.ConsultaNotFoundException;
 import br.edu.ifsp.clinica_api.model.Consulta;
 import br.edu.ifsp.clinica_api.model.enums.StatusConsulta;
+import br.edu.ifsp.clinica_api.repository.ConsultaRepository;
+import br.edu.ifsp.clinica_api.security.JwtService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -12,54 +16,58 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.time.LocalDate;
 
 @Service
+@RequiredArgsConstructor
 public class ConsultaService {
 
-    private final List<Consulta> consultas = new ArrayList<>();
-    private final AtomicLong idGenerator = new AtomicLong();
+    private final JwtService jwtService;
+    private final ConsultaRepository consultaRepository;
 
     // Criar consulta
     public Consulta createConsulta(Consulta newConsulta) {
-        newConsulta.setId(idGenerator.incrementAndGet());
         newConsulta.setDataHoraRegistrada(LocalDateTime.now());
-        consultas.add(newConsulta);
-        return newConsulta;
+        return consultaRepository.save(newConsulta);
     }
 
     // Listar tudo
     public List<Consulta> getAllConsultas() {
-        return consultas;
+        return consultaRepository.findAll();
     }
 
     // Buscar por ID
     public Consulta getConsultaById(long id) {
-        return consultas.stream()
-                .filter(c -> c.getId() == id)
-                .findFirst()
+        return consultaRepository.findById(id)
                 .orElseThrow(() -> new ConsultaNotFoundException(id));
     }
 
     // Deletar uma
     public void deleteConsulta(long id) {
-        boolean removed = consultas.removeIf(c -> c.getId().equals(id));
-        if (!removed) throw new ConsultaNotFoundException(id);
+        String papel = jwtService.getPapel();
+
+        if (!papel.equals("ADMIN") && !papel.equals("RECEPCIONISTA")) {
+            throw new AccessDeniedException("Você não tem acesso");
+        }
+
+        if (!consultaRepository.existsById(id))
+            throw new ConsultaNotFoundException(id);
+
+        consultaRepository.deleteById(id);
     }
 
     // Deletar tudo
     public void deleteAllConsultas() {
-        consultas.clear();
+        consultaRepository.deleteAll();
     }
 
     // Atualizar consulta inteira
     public Consulta updateConsulta(long id, Consulta updatedConsulta) {
-        Consulta original = getConsultaById(id);
+        Consulta original = consultaRepository.findById(id)
+                .orElseThrow(() -> new ConsultaNotFoundException(id));
 
+        // Mantém campos importantes
         updatedConsulta.setId(id);
-        // Mantém a data de registro original
         updatedConsulta.setDataHoraRegistrada(original.getDataHoraRegistrada());
 
-        consultas.remove(original);
-        consultas.add(updatedConsulta);
-        return updatedConsulta;
+        return consultaRepository.save(updatedConsulta);
     }
 
     // Atualizar APENAS status
@@ -71,88 +79,131 @@ public class ConsultaService {
             novoStatus = StatusConsulta.valueOf(status.toUpperCase());
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException(
-                    "Status inválido. Use: PENDENTE, CANCELADA, REALIZADA, REMARCADA."
+                    "Status inválido. Use: PENDENTE, CANCELADA, CONFIRMADA, CONCLUIDA, AUSENTE."
             );
         }
 
-        Consulta consulta = getConsultaById(id);
+        Consulta consulta = consultaRepository.findById(id)
+                .orElseThrow(() -> new ConsultaNotFoundException(id));
+
         consulta.setStatus(novoStatus);
-        return consulta;
+
+        return consultaRepository.save(consulta);
     }
 
     // Filtrar por médico
     public List<Consulta> getAllConsultasPorMedico(long idMedico) {
-        return consultas.stream()
-                .filter(c -> c.getMedico() != null && c.getMedico().getId() == idMedico)
-                .toList();
+
+        String papel = jwtService.getPapel();
+        Long idRef = jwtService.getIdReferencia(); // id do médico logado
+
+        if (papel.equals("PACIENTE")) {
+            throw new AccessDeniedException("Você não tem acesso a essas informações");
+        }
+
+        if (papel.equals("MEDICO") && idMedico != idRef) {
+            throw new AccessDeniedException("Você só pode acessar suas próprias consultas.");
+        }
+
+        return consultaRepository.findByMedicoId(idMedico);
     }
 
     // Filtrar por paciente
     public List<Consulta> getAllConsultasPorPaciente(long idPaciente) {
-        return consultas.stream()
-                .filter(c -> c.getPaciente() != null && c.getPaciente().getId() == idPaciente)
-                .toList();
+        String papel = jwtService.getPapel();
+        Long idRef = jwtService.getIdReferencia(); // id do paciente logado
+
+        if (papel.equals("MEDICO")) {
+            throw new AccessDeniedException("Você não tem acesso a essas informações");
+        }
+
+        if (papel.equals("PACIENTE") && idPaciente != idRef) {
+            throw new AccessDeniedException("Você não tem acesso a essas informações");
+        }
+
+        return consultaRepository.findByPacienteId(idPaciente);
     }
 
     // Filtrar por clínica
     public List<Consulta> getAllConsultasPorUnidade(long idClinica) {
-        return consultas.stream()
-                .filter(c -> c.getUnidade() != null && c.getUnidade().getId() == idClinica)
-                .toList();
+        String papel = jwtService.getPapel();
+
+        if (!papel.equals("ADMIN") && !papel.equals("RECEPCIONISTA")) {
+            throw new AccessDeniedException("Você não tem acesso a essas informações");
+        }
+
+        return consultaRepository.findByUnidadeId(idClinica);
     }
 
     // Filtrar por status
     public List<Consulta> getAllConsultasPorStatus(String status) {
-        try {
-            StatusConsulta statusEnum = StatusConsulta.valueOf(status.toUpperCase());
-            return consultas.stream()
-                    .filter(c -> c.getStatus() == statusEnum)
-                    .toList();
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Status inválido.");
+        String papel = jwtService.getPapel();
+
+        if (!papel.equals("ADMIN") && !papel.equals("RECEPCIONISTA")) {
+            throw new AccessDeniedException("Você não tem acesso a essas informações");
         }
+
+        try {
+            StatusConsulta.valueOf(status.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Status inválido: " + status);
+        }
+
+        return consultaRepository.findByStatus(status);
     }
 
     // Filtrar por período (data início e fim)
     public List<Consulta> getAllConsultasPorPeriodo(LocalDate inicio, LocalDate fim) {
-        return consultas.stream()
-                .filter(c -> c.getDataConsulta() != null &&
-                        !c.getDataConsulta().isBefore(inicio) &&
-                        !c.getDataConsulta().isAfter(fim))
-                .toList();
+        String papel = jwtService.getPapel();
+
+        if (!papel.equals("ADMIN") && !papel.equals("RECEPCIONISTA")) {
+            throw new AccessDeniedException("Você não tem acesso a essas informações");
+        }
+
+        return consultaRepository.findByDataConsultaBetween(inicio, fim);
     }
 
     // Médico + período
     public List<Consulta> getAllConsultasPorMedicoEPeriodo(long idMedico, LocalDate inicio, LocalDate fim) {
-        return consultas.stream()
-                .filter(c -> c.getMedico() != null &&
-                        c.getMedico().getId() == idMedico &&
-                        c.getDataConsulta() != null &&
-                        !c.getDataConsulta().isBefore(inicio) &&
-                        !c.getDataConsulta().isAfter(fim))
-                .toList();
+        String papel = jwtService.getPapel();
+        Long idRef = jwtService.getIdReferencia(); // id do médico logado
+
+        if (papel.equals("PACIENTE")) {
+            throw new AccessDeniedException("Você não tem acesso a essas informações");
+        }
+
+        if (papel.equals("MEDICO") && idMedico != idRef) {
+            throw new AccessDeniedException("Você não tem acesso a essas informações");
+        }
+
+        return consultaRepository.findByDataConsultaMedicoBetween(idMedico, inicio, fim);
     }
 
     // Clínica + período
-    public List<Consulta> getAllConsultasPorUnidadeEPeriodo(long idClinica, LocalDate inicio, LocalDate fim) {
-        return consultas.stream()
-                .filter(c -> c.getUnidade() != null &&
-                        c.getUnidade().getId() == idClinica &&
-                        c.getDataConsulta() != null &&
-                        !c.getDataConsulta().isBefore(inicio) &&
-                        !c.getDataConsulta().isAfter(fim))
-                .toList();
+    public List<Consulta> getAllConsultasPorUnidadeEPeriodo(long idUnidade, LocalDate inicio, LocalDate fim) {
+        String papel = jwtService.getPapel();
+
+        if (!papel.equals("ADMIN") && !papel.equals("RECEPCIONISTA")) {
+            throw new AccessDeniedException("Você só pode acessar suas próprias consultas.");
+        }
+
+        return consultaRepository.findByDataConsultaUnidadeBetween(idUnidade, inicio, fim);
     }
 
     // Paciente + período
     public List<Consulta> getAllConsultasPorPacienteEPeriodo(long idPaciente, LocalDate inicio, LocalDate fim) {
-        return consultas.stream()
-                .filter(c -> c.getPaciente() != null &&
-                        c.getPaciente().getId() == idPaciente &&
-                        c.getDataConsulta() != null &&
-                        !c.getDataConsulta().isBefore(inicio) &&
-                        !c.getDataConsulta().isAfter(fim))
-                .toList();
+        String papel = jwtService.getPapel();
+        Long idRef = jwtService.getIdReferencia(); // id do paciente logado
+
+        if (papel.equals("MEDICO")) {
+            throw new AccessDeniedException("Você não tem acesso a essas informações");
+        }
+
+        if (papel.equals("PACIENTE") && idPaciente != idRef) {
+            throw new AccessDeniedException("Você não tem acesso a essas informações");
+        }
+
+        return consultaRepository.findByDataConsultaPacienteBetween(idPaciente, inicio, fim);
     }
 }
 
