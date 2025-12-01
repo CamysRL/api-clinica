@@ -10,9 +10,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 import java.time.LocalDate;
 
 @Service
@@ -41,7 +39,8 @@ public class ConsultaService {
 
     // Deletar uma
     public void deleteConsulta(long id) {
-        String papel = jwtService.getPapel();
+
+        String papel = jwtService.getPapelDoUsuarioLogado();
 
         if (!papel.equals("ADMIN") && !papel.equals("RECEPCIONISTA")) {
             throw new AccessDeniedException("Você não tem acesso");
@@ -63,14 +62,13 @@ public class ConsultaService {
         Consulta original = consultaRepository.findById(id)
                 .orElseThrow(() -> new ConsultaNotFoundException(id));
 
-        // Mantém campos importantes
         updatedConsulta.setId(id);
         updatedConsulta.setDataHoraRegistrada(original.getDataHoraRegistrada());
 
         return consultaRepository.save(updatedConsulta);
     }
 
-    // Atualizar APENAS status
+    // Atualizar apenas status
     public Consulta updateStatus(long id, String status) {
 
         StatusConsulta novoStatus;
@@ -94,8 +92,8 @@ public class ConsultaService {
     // Filtrar por médico
     public List<Consulta> getAllConsultasPorMedico(long idMedico) {
 
-        String papel = jwtService.getPapel();
-        Long idRef = jwtService.getIdReferencia(); // id do médico logado
+        String papel = jwtService.getPapelDoUsuarioLogado();
+        Long idRef = jwtService.getIdReferenciaDoUsuarioLogado();
 
         if (papel.equals("PACIENTE")) {
             throw new AccessDeniedException("Você não tem acesso a essas informações");
@@ -110,8 +108,8 @@ public class ConsultaService {
 
     // Filtrar por paciente
     public List<Consulta> getAllConsultasPorPaciente(long idPaciente) {
-        String papel = jwtService.getPapel();
-        Long idRef = jwtService.getIdReferencia(); // id do paciente logado
+        String papel = jwtService.getPapelDoUsuarioLogado();
+        Long idRef = jwtService.getIdReferenciaDoUsuarioLogado();
 
         if (papel.equals("MEDICO")) {
             throw new AccessDeniedException("Você não tem acesso a essas informações");
@@ -124,9 +122,9 @@ public class ConsultaService {
         return consultaRepository.findByPacienteId(idPaciente);
     }
 
-    // Filtrar por clínica
+    // Filtrar por unidade
     public List<Consulta> getAllConsultasPorUnidade(long idClinica) {
-        String papel = jwtService.getPapel();
+        String papel = jwtService.getPapelDoUsuarioLogado();
 
         if (!papel.equals("ADMIN") && !papel.equals("RECEPCIONISTA")) {
             throw new AccessDeniedException("Você não tem acesso a essas informações");
@@ -137,7 +135,7 @@ public class ConsultaService {
 
     // Filtrar por status
     public List<Consulta> getAllConsultasPorStatus(String status) {
-        String papel = jwtService.getPapel();
+        String papel = jwtService.getPapelDoUsuarioLogado();
 
         if (!papel.equals("ADMIN") && !papel.equals("RECEPCIONISTA")) {
             throw new AccessDeniedException("Você não tem acesso a essas informações");
@@ -152,9 +150,9 @@ public class ConsultaService {
         return consultaRepository.findByStatus(status);
     }
 
-    // Filtrar por período (data início e fim)
+    // Filtrar por período
     public List<Consulta> getAllConsultasPorPeriodo(LocalDate inicio, LocalDate fim) {
-        String papel = jwtService.getPapel();
+        String papel = jwtService.getPapelDoUsuarioLogado();
 
         if (!papel.equals("ADMIN") && !papel.equals("RECEPCIONISTA")) {
             throw new AccessDeniedException("Você não tem acesso a essas informações");
@@ -165,8 +163,8 @@ public class ConsultaService {
 
     // Médico + período
     public List<Consulta> getAllConsultasPorMedicoEPeriodo(long idMedico, LocalDate inicio, LocalDate fim) {
-        String papel = jwtService.getPapel();
-        Long idRef = jwtService.getIdReferencia(); // id do médico logado
+        String papel = jwtService.getPapelDoUsuarioLogado();
+        Long idRef = jwtService.getIdReferenciaDoUsuarioLogado();
 
         if (papel.equals("PACIENTE")) {
             throw new AccessDeniedException("Você não tem acesso a essas informações");
@@ -176,24 +174,24 @@ public class ConsultaService {
             throw new AccessDeniedException("Você não tem acesso a essas informações");
         }
 
-        return consultaRepository.findByDataConsultaMedicoBetween(idMedico, inicio, fim);
+        return consultaRepository.findByMedico_IdAndDataConsultaBetween(idMedico, inicio, fim);
     }
 
-    // Clínica + período
+    // Unidade + período
     public List<Consulta> getAllConsultasPorUnidadeEPeriodo(long idUnidade, LocalDate inicio, LocalDate fim) {
-        String papel = jwtService.getPapel();
+        String papel = jwtService.getPapelDoUsuarioLogado();
 
         if (!papel.equals("ADMIN") && !papel.equals("RECEPCIONISTA")) {
-            throw new AccessDeniedException("Você só pode acessar suas próprias consultas.");
+            throw new AccessDeniedException("Você não tem acesso a essas informações");
         }
 
-        return consultaRepository.findByDataConsultaUnidadeBetween(idUnidade, inicio, fim);
+        return consultaRepository.findByUnidade_IdAndDataConsultaBetween(idUnidade, inicio, fim);
     }
 
     // Paciente + período
     public List<Consulta> getAllConsultasPorPacienteEPeriodo(long idPaciente, LocalDate inicio, LocalDate fim) {
-        String papel = jwtService.getPapel();
-        Long idRef = jwtService.getIdReferencia(); // id do paciente logado
+        String papel = jwtService.getPapelDoUsuarioLogado();
+        Long idRef = jwtService.getIdReferenciaDoUsuarioLogado();
 
         if (papel.equals("MEDICO")) {
             throw new AccessDeniedException("Você não tem acesso a essas informações");
@@ -203,7 +201,6 @@ public class ConsultaService {
             throw new AccessDeniedException("Você não tem acesso a essas informações");
         }
 
-        return consultaRepository.findByDataConsultaPacienteBetween(idPaciente, inicio, fim);
+        return consultaRepository.findByPaciente_IdAndDataConsultaBetween(idPaciente, inicio, fim);
     }
 }
-

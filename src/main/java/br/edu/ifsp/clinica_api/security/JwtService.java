@@ -4,15 +4,14 @@ import br.edu.ifsp.clinica_api.model.Usuario;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
-import lombok.Data;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -25,57 +24,67 @@ public class JwtService {
 
     // ----------- GERAR TOKEN -----------
     public String gerarToken(Usuario usuario) {
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("papel", usuario.getPapel().name());
-        claims.put("id", usuario.getId());
-        claims.put("idReferencia", usuario.getId_referencia());
-
         return Jwts.builder()
-                .setClaims(claims)
                 .setSubject(usuario.getEmail())
+                .claim("id", usuario.getId())
+                .claim("papel", usuario.getPapel().name())
+                .claim("idRef", usuario.getId_referencia())
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + expirationMs))
                 .signWith(SignatureAlgorithm.HS256, secretKey.getBytes())
                 .compact();
     }
 
-    // ----------- EXTRATORES -----------
-    public String getEmail() {
-        return extractAllClaims(getToken()).getSubject();
-    }
-
-    public String getPapel() {
-        return (String) extractAllClaims(getToken()).get("papel");
-    }
-
-    public Long getIdReferencia() {
-        return ((Number) extractAllClaims(getToken()).get("idReferencia")).longValue();
-    }
-
-    // ----------- TOKEN UTIL -----------
-    private String getToken() {
-        var auth = SecurityContextHolder.getContext().getAuthentication();
-
-        if (auth == null || auth.getCredentials() == null) {
-            throw new RuntimeException("Token não encontrado na requisição.");
-        }
-
-        String authHeader = auth.getCredentials().toString();
-
-        return authHeader.replace("Bearer ", "");
-    }
-
-    private Claims extractAllClaims(String token) {
+    // ----------- EXTRAIR CLAIMS -----------
+    public Claims extractClaims(String token) {
         return Jwts.parser()
                 .setSigningKey(secretKey.getBytes())
                 .parseClaimsJws(token)
                 .getBody();
     }
 
+    // ----------- PEGAR TOKEN DA REQUISIÇÃO -----------
+    private String getTokenFromRequest() {
+        ServletRequestAttributes attrs =
+                (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+
+        if (attrs == null) return null;
+
+        HttpServletRequest request = attrs.getRequest();
+        String header = request.getHeader("Authorization");
+
+        if (header != null && header.startsWith("Bearer ")) {
+            return header.substring(7);
+        }
+
+        return null;
+    }
+
+    // ----------- OBTER PAPEL DO USUÁRIO LOGADO -----------
+    public String getPapelDoUsuarioLogado() {
+        String token = getTokenFromRequest();
+        if (token == null) return null;
+
+        Claims claims = extractClaims(token);
+        return claims.get("papel", String.class);
+    }
+
+    // ----------- OBTER id_referencia DO USUÁRIO LOGADO -----------
+    public Long getIdReferenciaDoUsuarioLogado() {
+        String token = getTokenFromRequest();
+        if (token == null) return null;
+
+        Claims claims = extractClaims(token);
+        return claims.get("idRef", Long.class);
+    }
+
+    // ----------- VALIDAÇÃO -----------
     public boolean tokenValido(String token, Usuario usuario) {
-        final String email = extractAllClaims(token).getSubject();
-        return (email.equals(usuario.getEmail()) && !extractAllClaims(token)
-                .getExpiration().before(new Date()));
+        String email = extractClaims(token).getSubject();
+        return email.equals(usuario.getEmail()) &&
+                !extractClaims(token).getExpiration().before(new Date());
     }
 }
+
+
 

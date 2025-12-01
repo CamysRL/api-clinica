@@ -16,8 +16,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @RequiredArgsConstructor
 public class SecurityConfig {
+
     private final JwtFilter jwtFilter;
-    private final JwtService jwtService;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -32,14 +32,14 @@ public class SecurityConfig {
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
 
-                        // Login público
-                        .requestMatchers("/auth/login").permitAll()
+                        // ------------------------------
+                        // LOGIN → totalmente público
+                        // ------------------------------
+                        .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
 
                         // ------------------------------
-                        //        CONSULTAS
+                        // CONSULTAS → ADMIN & RECEPCIONISTA
                         // ------------------------------
-
-                        // ADMIN & RECEPCIONISTA → acesso total às listagens
                         .requestMatchers(
                                 "/consultas",
                                 "/consultas/status/**",
@@ -47,23 +47,21 @@ public class SecurityConfig {
                                 "/consultas/unidade/**"
                         ).hasAnyRole("ADMIN", "RECEPCIONISTA")
 
-                        // Excluir TODAS as consultas → somente ADMIN
+                        // Deletar TODAS as consultas → somente ADMIN
                         .requestMatchers(HttpMethod.DELETE, "/consultas")
                         .hasRole("ADMIN")
 
-                        // ------------------------------------------------
-                        // PACIENTE → pode acessar APENAS as próprias consultas
-                        // ------------------------------------------------
-
-                        // Ver suas consultas
+                        // ------------------------------
+                        // CONSULTAS DO PACIENTE
+                        // ------------------------------
                         .requestMatchers(HttpMethod.GET, "/consultas/paciente/**")
                         .hasRole("PACIENTE")
 
-                        // Criar
+                        // Criar consulta → paciente, recepcionista e admin
                         .requestMatchers(HttpMethod.POST, "/consultas")
                         .hasAnyRole("PACIENTE", "RECEPCIONISTA", "ADMIN")
 
-                        // Editar/Atualizar/Excluir (apenas as dele → validado no Service)
+                        // Atualizar / alterar / excluir → apenas autorizado no service
                         .requestMatchers(HttpMethod.PUT, "/consultas/**")
                         .hasAnyRole("PACIENTE", "RECEPCIONISTA", "ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/consultas/**")
@@ -71,23 +69,25 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/consultas/**")
                         .hasAnyRole("PACIENTE", "RECEPCIONISTA", "ADMIN")
 
-                        // ------------------------------------------------
-                        // MÉDICO → pode ver APENAS as próprias consultas
-                        // ------------------------------------------------
-
-                        // Ver consultas dele
+                        // ------------------------------
+                        // CONSULTAS DO MÉDICO
+                        // ------------------------------
                         .requestMatchers(HttpMethod.GET, "/consultas/medico/**")
                         .hasRole("MEDICO")
 
-                        // Atualizar status de suas consultas
-                        .requestMatchers(HttpMethod.PATCH, "/consultas/**")
+                        // Atualizar status (somente das dele → validado no service)
+                        .requestMatchers(HttpMethod.PATCH, "/consultas/medico/**")
                         .hasRole("MEDICO")
 
                         // ------------------------------
-                        // Qualquer outra rota → autenticado
+                        // Qualquer outra rota → precisa estar autenticado
                         // ------------------------------
                         .anyRequest().authenticated()
                 )
+
+                // ------------------------------
+                // FILTRO JWT
+                // ------------------------------
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -97,6 +97,4 @@ public class SecurityConfig {
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
-
-
 }

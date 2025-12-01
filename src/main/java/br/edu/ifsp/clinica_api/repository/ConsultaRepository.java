@@ -21,9 +21,10 @@ public interface ConsultaRepository extends JpaRepository<Consulta, Long>  {
 
     List<Consulta> findByDataConsultaBetween(LocalDate inicio, LocalDate fim);
 
-    List<Consulta> findByDataConsultaMedicoBetween(long idMedico, LocalDate inicio, LocalDate fim);
+    List<Consulta> findByMedico_IdAndDataConsultaBetween(Long idMedico, LocalDate inicio, LocalDate fim);
 
-    List<Consulta> findByDataConsultaUnidadeBetween(long idUnidade, LocalDate inicio, LocalDate fim);
+    List<Consulta> findByUnidade_IdAndDataConsultaBetween(Long idUnidade, LocalDate inicio, LocalDate fim);
 
-    List<Consulta> findByDataConsultaPacienteBetween(long idPaciente, LocalDate inicio, LocalDate fim);
+    List<Consulta> findByPaciente_IdAndDataConsultaBetween(Long idPaciente, LocalDate inicio, LocalDate fim);
+
 }
