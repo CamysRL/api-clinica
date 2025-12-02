@@ -36,6 +36,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/pacientes").permitAll()
 
+                        /*
+                          CONSULTAS
+                         */
                         // CRIAÇÃO DE CONSULTA → permite PACIENTE, RECEPCIONISTA, ADMIN
                         .requestMatchers(HttpMethod.POST, "/consultas")
                         .hasAnyRole("PACIENTE", "RECEPCIONISTA", "ADMIN")
@@ -58,6 +61,27 @@ public class SecurityConfig {
                         // ROTAS QUE USAM ID
                         .requestMatchers("/consultas/**")
                         .hasAnyRole("PACIENTE", "RECEPCIONISTA", "ADMIN")
+
+                        /*
+                         RECEPICIONISTA
+                        * */
+                        .requestMatchers("/recepcionistas/**")
+                        .hasAnyRole("ADMIN", "RECEPICIONISTA")
+
+
+                        /*
+                         MEDICOS
+                         - listar e cadastrar → ADMIN e RECEPCIONISTA
+                         - excluir → somente ADMIN
+                        */
+                        .requestMatchers(HttpMethod.GET, "/medicos")
+                        .hasAnyRole("ADMIN", "RECEPCIONISTA")
+
+                        .requestMatchers(HttpMethod.POST, "/medicos")
+                        .hasAnyRole("ADMIN", "RECEPCIONISTA")
+
+                        .requestMatchers(HttpMethod.DELETE, "/medicos/**")
+                        .hasRole("ADMIN")
 
                         .anyRequest().authenticated()
                 )
