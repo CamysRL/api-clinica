@@ -1,15 +1,23 @@
 package br.edu.ifsp.clinica_api.service;
 
+import br.edu.ifsp.clinica_api.dto.ConsultaCreateDTO;
 import br.edu.ifsp.clinica_api.exceptions.ConsultaNotFoundException;
 import br.edu.ifsp.clinica_api.model.Consulta;
+import br.edu.ifsp.clinica_api.model.Medico;
+import br.edu.ifsp.clinica_api.model.Paciente;
+import br.edu.ifsp.clinica_api.model.Unidade;
 import br.edu.ifsp.clinica_api.model.enums.StatusConsulta;
 import br.edu.ifsp.clinica_api.repository.ConsultaRepository;
+import br.edu.ifsp.clinica_api.repository.MedicoRepository;
+import br.edu.ifsp.clinica_api.repository.PacienteRepository;
+import br.edu.ifsp.clinica_api.repository.UnidadeRepository;
 import br.edu.ifsp.clinica_api.security.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.time.LocalDate;
 
@@ -19,11 +27,30 @@ public class ConsultaService {
 
     private final JwtService jwtService;
     private final ConsultaRepository consultaRepository;
+    private final PacienteRepository pacienteRepository;
+    private final MedicoRepository medicoRepository;
+    private final UnidadeRepository unidadeRepository;
 
-    // Criar consulta
-    public Consulta createConsulta(Consulta newConsulta) {
-        newConsulta.setDataHoraRegistrada(LocalDateTime.now());
-        return consultaRepository.save(newConsulta);
+    public Consulta createConsulta(ConsultaCreateDTO dto) {
+        Paciente paciente = pacienteRepository.findById(dto.getPacienteId())
+                .orElseThrow(() -> new RuntimeException("Paciente não encontrado"));
+
+        Medico medico = medicoRepository.findById(dto.getMedicoId())
+                .orElseThrow(() -> new RuntimeException("Médico não encontrado"));
+
+        Unidade unidade = unidadeRepository.findById(dto.getUnidadeId())
+                .orElseThrow(() -> new RuntimeException("Unidade não encontrada"));
+
+        Consulta consulta = new Consulta();
+        consulta.setStatus(StatusConsulta.valueOf(dto.getStatus()));
+        consulta.setDataConsulta(LocalDate.parse(dto.getDataConsulta()));
+        consulta.setHoraConsulta(LocalTime.parse(dto.getHoraConsulta()));
+        consulta.setDataHoraRegistrada(LocalDateTime.now());
+        consulta.setPaciente(paciente);
+        consulta.setMedico(medico);
+        consulta.setUnidade(unidade);
+
+        return consultaRepository.save(consulta);
     }
 
     // Listar tudo

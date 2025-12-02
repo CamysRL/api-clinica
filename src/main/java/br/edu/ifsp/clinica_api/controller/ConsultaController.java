@@ -1,7 +1,9 @@
 package br.edu.ifsp.clinica_api.controller;
 
+import br.edu.ifsp.clinica_api.dto.ConsultaCreateDTO;
 import br.edu.ifsp.clinica_api.model.Consulta;
 import br.edu.ifsp.clinica_api.service.ConsultaService;
+import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,8 +25,9 @@ public class ConsultaController {
     // ---------------------- CRUD ----------------------
 
     @PostMapping
-    public ResponseEntity<Consulta> createConsulta(@RequestBody Consulta newConsulta) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(consultaService.createConsulta(newConsulta));
+    public ResponseEntity<Consulta> createConsulta(@Valid @RequestBody ConsultaCreateDTO dto) {
+        Consulta saved = consultaService.createConsulta(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
     @GetMapping

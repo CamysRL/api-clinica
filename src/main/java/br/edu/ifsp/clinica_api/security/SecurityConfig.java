@@ -24,6 +24,7 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
@@ -32,66 +33,39 @@ public class SecurityConfig {
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
 
-                        // ------------------------------
-                        // LOGIN → totalmente público
-                        // ------------------------------
                         .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/pacientes").permitAll()
 
-                        // ------------------------------
-                        // CONSULTAS → ADMIN & RECEPCIONISTA
-                        // ------------------------------
+                        // CRIAÇÃO DE CONSULTA → permite PACIENTE, RECEPCIONISTA, ADMIN
+                        .requestMatchers(HttpMethod.POST, "/consultas")
+                        .hasAnyRole("PACIENTE", "RECEPCIONISTA", "ADMIN")
+
+                        // CONSULTAS GERAIS (GET)
+                        .requestMatchers(HttpMethod.GET, "/consultas")
+                        .hasAnyRole("ADMIN", "RECEPCIONISTA")
+
+                        // OUTROS FILTROS QUE SÃO GET
                         .requestMatchers(
-                                "/consultas",
                                 "/consultas/status/**",
                                 "/consultas/periodo",
                                 "/consultas/unidade/**"
                         ).hasAnyRole("ADMIN", "RECEPCIONISTA")
 
-                        // Deletar TODAS as consultas → somente ADMIN
+                        // DELETE sem ID → só admin
                         .requestMatchers(HttpMethod.DELETE, "/consultas")
                         .hasRole("ADMIN")
 
-                        // ------------------------------
-                        // CONSULTAS DO PACIENTE
-                        // ------------------------------
-                        .requestMatchers(HttpMethod.GET, "/consultas/paciente/**")
-                        .hasRole("PACIENTE")
-
-                        // Criar consulta → paciente, recepcionista e admin
-                        .requestMatchers(HttpMethod.POST, "/consultas")
+                        // ROTAS QUE USAM ID
+                        .requestMatchers("/consultas/**")
                         .hasAnyRole("PACIENTE", "RECEPCIONISTA", "ADMIN")
 
-                        // Atualizar / alterar / excluir → apenas autorizado no service
-                        .requestMatchers(HttpMethod.PUT, "/consultas/**")
-                        .hasAnyRole("PACIENTE", "RECEPCIONISTA", "ADMIN")
-                        .requestMatchers(HttpMethod.PATCH, "/consultas/**")
-                        .hasAnyRole("PACIENTE", "RECEPCIONISTA", "ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/consultas/**")
-                        .hasAnyRole("PACIENTE", "RECEPCIONISTA", "ADMIN")
-
-                        // ------------------------------
-                        // CONSULTAS DO MÉDICO
-                        // ------------------------------
-                        .requestMatchers(HttpMethod.GET, "/consultas/medico/**")
-                        .hasRole("MEDICO")
-
-                        // Atualizar status (somente das dele → validado no service)
-                        .requestMatchers(HttpMethod.PATCH, "/consultas/medico/**")
-                        .hasRole("MEDICO")
-
-                        // ------------------------------
-                        // Qualquer outra rota → precisa estar autenticado
-                        // ------------------------------
                         .anyRequest().authenticated()
                 )
-
-                // ------------------------------
-                // FILTRO JWT
-                // ------------------------------
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
+
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
